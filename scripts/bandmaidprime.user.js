@@ -24,12 +24,17 @@
     return match ? match[1] : null;
   };
 
+  let setlistCache = null;
+
   // Fetch JSON from GitHub (MV3-compatible)
   const loadSetlists = async () => {
+    if (setlistCache) return setlistCache;
+
     try {
       const res = await fetch(GITHUB_JSON_URL);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      setlistCache = await res.json();
+      return setlistCache;
     } catch (err) {
       console.error('Failed to load setlists:', err);
       return {};
@@ -170,19 +175,53 @@
         (entry.Category && entry.Category.toLowerCase().includes(query))
       );
 
-      if (!matches.length) {
+      const setlists = await loadSetlists();
+      // Search for song matches in setlists
+      const songMatches = [];
+      for (const [videoId, setlistObj] of Object.entries(setlists)) {
+        if (Array.isArray(setlistObj.setlist)) {
+          for (const entry of setlistObj.setlist) {
+            if (entry.song && entry.song.toLowerCase().includes(query)) {
+              songMatches.push({
+                videoId,
+                title: setlistObj.title,
+                song: entry.song,
+                time: entry.time || null
+              });
+            }
+          }
+        }
+      }
+
+      if (!matches.length && !songMatches.length) {
         resultsBox.innerHTML = `<div style="color:#888;">No matches found.</div>`;
         return;
       }
 
-      resultsBox.innerHTML = matches
-        .map(entry => {
-          const title = entry.Title || '(No Title)';
-          const cat = entry.Category ? `<span style="color:#999;">[${entry.Category}]</span> ` : '';
-          const url = entry.URL || entry.Link || '#';
-          return `<div style="margin-bottom:6px;"><a href="${url}" target="_blank" style="text-decoration:none; color:#d12d6d;">${cat}${title}</a></div>`;
-        })
-        .join('');
+      let html = '';
+      if (matches.length) {
+        // html += '<div style="margin-bottom:8px;"><strong>Videos</strong></div>';
+        html += matches
+          .map(entry => {
+            const title = entry.Title || '(No Title)';
+            const cat = entry.Category ? `<span style="color:#999;">[${entry.Category}]</span> ` : '';
+            const url = entry.URL || entry.Link || '#';
+            return `<div style="margin-bottom:6px;"><a href="${url}" style="text-decoration:none; color:#d12d6d;">${cat}${title}</a></div>`;
+          })
+          .join('');
+      }
+      if (songMatches.length) {
+        html += '<div style="margin:12px 0 4px 0;"><strong>In Setlists</strong></div>';
+        html += songMatches
+          .map(match => {
+            const cat = `<span style="color:#999;">[${data.find(d => d.URL && d.URL.includes(match.videoId))?.Category}]</span> `;
+            const link = `https://bandmaidprime.tokyo/movies/${match.videoId}` + (match.time ? `#t=${(match.time.split(':')[0]*60 + Number(match.time.split(':')[1]))}` : '');
+            const timeLabel = match.time ? `<span style="color:#888;">[${match.time}]</span> ` : '';
+            return `<div style="margin-bottom:6px;"><a href="${link}" style="text-decoration:none; color:#2d6dd1;">${cat}${match.song} ${timeLabel} <span style="color:#999;">in</span> <span style="color:#d12d6d;">${match.title}</span></a></div>`;
+          })
+          .join('');
+      }
+      resultsBox.innerHTML = html;
     });
   }
 
@@ -278,6 +317,17 @@
 
     const videoId = getVideoId();
     if (!videoId) return;
+
+    if (window.location.hash.startsWith('#t=')) {
+      // send seek message to iframe
+      const seconds = Number(window.location.hash.split('=')[1]);
+      const videoIframe = document.querySelector('iframe[src*="uliza.jp"]');
+      if (videoIframe) {
+        videoIframe.contentWindow.postMessage({ action: "seek", time: seconds }, "*");
+      }
+      // remove hash
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
 
     try {
       const setlists = await loadSetlists();
