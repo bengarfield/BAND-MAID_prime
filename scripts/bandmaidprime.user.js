@@ -42,7 +42,7 @@
   };
 
   // Setup message listener for ULIZA iframe
-  const setupMessageListener = () => {
+  const setupVideoControlMessageListener = () => {
       window.addEventListener('message', (event) => {
       if (event.data.action !== 'seek') return;
       // await video element to load
@@ -56,7 +56,66 @@
       });
       observer.observe(document.body, { childList: true, subtree: true });
     });
+    
+    // send current time to parent
+    setInterval(() => {
+      const video = document.querySelector('video');
+      if (video) {
+        window.parent.postMessage(JSON.stringify({ action: 'updateTime', time: video.currentTime }), '*');
+      }
+    }, 1000);
   };
+
+  // Setup message listener to receive playback time updates
+  const setupPlaybackTimeMessageListener = (videoId) => {
+    window.addEventListener('message', (event) => {
+      if (!event.data.startsWith('{')) return;
+      var data = JSON.parse(event.data);
+      if (data.action !== 'updateTime') return;
+      const currentTime = data.time;  
+      if (currentSetlist) {
+        // Find current song/section based on current playback time
+        const setlist = setlistCache[videoId].setlist;
+        let index = 0;
+        for (let i = 0; i < setlist.length; i++) {
+          if (!setlist[i].time) continue;
+          const seconds = getSecondsFromTimeString(setlist[i].time);
+          if (i == 0 && currentTime < seconds) {
+            // First section
+            index = 0;
+            break;
+          }
+          if (i < setlist.length - 1) {
+            const next = setlist[i + 1];
+            if (next.time) {
+              const nextSeconds = getSecondsFromTimeString(next.time);
+              if (currentTime >= seconds && currentTime < nextSeconds) {
+                index = i;
+                break;
+              }
+            }
+          }
+          if (i == setlist.length - 1 && currentTime >= seconds) {
+            // Last section
+            index = i;
+            break;
+          }
+        }
+        // Apply highlighted color to current song/section
+        Array.from(currentSetlist.children).forEach((li, i) => {
+          li.className = i === index ? 'highlighted' : '';
+          for (const child of li.querySelectorAll('span')) {
+            child.className = i === index ? 'highlighted' : '';
+          }
+        });
+      }
+    });
+  }
+
+  function getSecondsFromTimeString(timeStr) {
+    const [min, sec] = timeStr.split(':').map(Number);
+    return min * 60 + sec;
+  }
 
   // =====================
   // 🔍 SEARCH FUNCTIONS
@@ -231,6 +290,8 @@
     });
   }
 
+  let currentSetlist = null;
+
   // Create the overlay
   const renderSummary = (data, setlists) => {
     const existing = document.querySelector('#bandmaid-summary-box');
@@ -287,8 +348,7 @@
           html += `<strong>${allSetlists.length == 1 ? "Contents" : "Part " + (allSetlists.indexOf(part) + 1)}:</strong><br><ol ${part == data ? 'class="currentSetlist"' : ''} style="margin-top:4px;" start=${i}>`;
           for (const entry of part.setlist) {
             if (entry.time) {
-              const [min, sec] = entry.time.split(':').map(Number);
-              const seconds = min * 60 + sec;
+              const seconds = getSecondsFromTimeString(entry.time);
               const url = (part == data ? "" : "https://bandmaidprime.tokyo/movies/" + part.id) + (entry.time ? `#t=${seconds}` : '');
               html += `<li><a href="${url}" <span style="color:#d12d6d; text-decoration:none;">[${entry.time}]</span><span style="color:#fff;"> ${entry.song}</span></a></li>`;
             } else {
@@ -323,6 +383,12 @@
 
     const titleElement = document.querySelector('h1, .movie-title');
     if (titleElement) titleElement.insertAdjacentElement('afterend', div);
+	
+    currentSetlist = document.querySelector('.currentSetlist');
+    let highlightedStyle = document.createElement('style');
+    highlightedStyle.type = 'text/css';
+    highlightedStyle.innerHTML = `.highlighted {color: #FFF301 !important;}`;
+    document.head.appendChild(highlightedStyle);
 
     createSearchBox(container);
 
@@ -349,12 +415,14 @@
   // Main
   window.addEventListener('load', async () => {
     if (window.location.origin == "https://player-api.p.uliza.jp") {
-      setupMessageListener();
+      setupVideoControlMessageListener();
       return;
     }
 
     const videoId = getVideoId();
     if (!videoId) return;
+
+    setupPlaybackTimeMessageListener(videoId);
 
     if (window.location.hash.startsWith('#t=')) {
       // send seek message to iframe
