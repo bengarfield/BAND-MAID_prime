@@ -44,12 +44,18 @@
   // Setup message listener for ULIZA iframe
   const setupMessageListener = () => {
       window.addEventListener('message', (event) => {
+      if (event.data.action !== 'seek') return;
+      // await video element to load
+      const observer = new MutationObserver((mutations, obs) => {
         const video = document.querySelector('video');
         if (video) {
+          obs.disconnect();
           video.currentTime = event.data.time;
           video.play();
         }
       });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
   };
 
   // =====================
@@ -250,38 +256,69 @@
       if (data.date) html += `<strong>Date:</strong> ${data.date}<br>`;
       if (data.notes) html += `<strong>Notes:</strong> ${data.notes}<br><br>`;
 
-      if (data.setlist && data.setlist.length) {
-        html += `<strong>Contents:</strong><br><ol style="margin-top:4px;">`;
-        for (const entry of data.setlist) {
-          if (entry.time) {
-            const [min, sec] = entry.time.split(':').map(Number);
-            const seconds = min * 60 + sec;
-            html += `<li><a href="#t=${seconds}" style="color:#d12d6d; text-decoration:none;">[${entry.time}]</a> ${entry.song}</li>`;
-          } else {
-            html += `<li>${entry.song}</li>`;
-          }
+      // Get all setlists for multi-part videos
+      const allSetlists = [];
+      if (data.previous || data.next) {
+        let current = data;
+        while (current.previous) {
+          const prev = setlists[current.previous];
+          if (!prev) break;
+          prev.id = current.previous;
+          allSetlists.push(prev);
+          current = prev;
         }
+        allSetlists.reverse();
+        allSetlists.push(data);
+        current = data;
+        while (current.next) {
+          const next = setlists[current.next];
+          if (!next) break;
+          next.id = current.next;
+          allSetlists.push(next);
+          current = next;
+        }
+      } else {
+		allSetlists.push(data);
+	  }
+
+      if (data.setlist && data.setlist.length) {
+        var i = 1;
+        for (const part of allSetlists) {
+          html += `<strong>${allSetlists.length == 1 ? "Contents" : "Part " + (allSetlists.indexOf(part) + 1)}:</strong><br><ol ${part == data ? 'class="currentSetlist"' : ''} style="margin-top:4px;" start=${i}>`;
+          for (const entry of part.setlist) {
+            if (entry.time) {
+              const [min, sec] = entry.time.split(':').map(Number);
+              const seconds = min * 60 + sec;
+              const url = (part == data ? "" : "https://bandmaidprime.tokyo/movies/" + part.id) + (entry.time ? `#t=${seconds}` : '');
+              html += `<li><a href="${url}" <span style="color:#d12d6d; text-decoration:none;">[${entry.time}]</span><span style="color:#fff;"> ${entry.song}</span></a></li>`;
+            } else {
+              html += `<li>${entry.song}</li>`;
+            }
+            i++;
+          }
         html += `</ol><br>`;
+        }
       }
 
-      // Navigation buttons
-      if (data.previous || data.next) {
-        html += `<div style="margin-top:16px;">`;
-        if (data.previous) {
-          const prev = setlists[data.previous];
-          html += `<a href="https://bandmaidprime.tokyo/movies/${data.previous}" style="margin-right:12px; color:#333; text-decoration:none; background:#f9d5e2; padding:6px 10px; border-radius:8px;">⬅️ Prev: ${prev ? prev.title.replace(/\[OKYUJI\]\s*/,'') : 'Part -'}</a><br><br>`;
-        }
-        if (data.next) {
-          const next = setlists[data.next];
-          html += `<a href="https://bandmaidprime.tokyo/movies/${data.next}" style="color:#333; text-decoration:none; background:#f9d5e2; padding:6px 10px; border-radius:8px;">Next: ${next ? next.title.replace(/\[OKYUJI\]\s*/,'') : 'Part +' } ➡️</a>`;
-        }
-        html += `</div>`;
-      }
+    //   // Navigation buttons
+    //   if (data.previous || data.next) {
+    //     html += `<div style="margin-top:16px;">`;
+    //     if (data.previous) {
+    //       const prev = setlists[data.previous];
+    //       html += `<a href="https://bandmaidprime.tokyo/movies/${data.previous}" style="margin-right:12px; color:#333; text-decoration:none; background:#f9d5e2; padding:6px 10px; border-radius:8px;">⬅️ Prev: ${prev ? prev.title.replace(/\[OKYUJI\]\s*/,'') : 'Part -'}</a><br><br>`;
+    //     }
+    //     if (data.next) {
+    //       const next = setlists[data.next];
+    //       html += `<a href="https://bandmaidprime.tokyo/movies/${data.next}" style="color:#333; text-decoration:none; background:#f9d5e2; padding:6px 10px; border-radius:8px;">Next: ${next ? next.title.replace(/\[OKYUJI\]\s*/,'') : 'Part +' } ➡️</a>`;
+    //     }
+    //     html += `</div>`;
+    //   }
     } else {
       html += '<br>';
     }
 
     const div = document.createElement('div');
+    div.style.width = 'fit-content';
     div.innerHTML = html;
 
     const titleElement = document.querySelector('h1, .movie-title');
@@ -290,10 +327,11 @@
     createSearchBox(container);
 
     // Timestamp jump
-    div.addEventListener('click', e => {
-      if (e.target.tagName === 'A' && e.target.href.includes('#t=')) {
+	div.addEventListener('click', e => {
+      if ((e.target.tagName === 'A' && e.target.href.includes(window.location.pathname) && e.target.href.includes('#t=')) || 
+          (e.target.parentElement.tagName === 'A' && e.target.parentElement.href.includes(window.location.pathname) && e.target.parentElement.href.includes('#t='))) {
         e.preventDefault();
-        const seconds = Number(e.target.href.split('#t=')[1]);
+        const seconds = Number((e.target.tagName === 'A' ? e.target : e.target.parentElement).href.split('#t=')[1]);
         const video = document.querySelector('video');
         const videoIframe = document.querySelector('iframe[src*="uliza.jp"]');
         if (video) {
