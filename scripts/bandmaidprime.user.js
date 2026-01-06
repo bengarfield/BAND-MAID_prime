@@ -14,7 +14,7 @@
   'use strict';
 
   const GITHUB_JSON_URL =
-    'https://raw.githubusercontent.com/DriveTimeBM/BAND-MAID_prime/main/data/setlists.json';
+    'https://raw.githubusercontent.com/bengarfield/BAND-MAID_prime/refs/heads/testing-2/data/setlists.json';
 
   const PRIME_JSON_URL = 'https://drivetimebm.github.io/BAND-MAID_gpt/prime/prime.json';
 
