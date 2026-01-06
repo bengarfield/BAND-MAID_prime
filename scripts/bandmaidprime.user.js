@@ -320,28 +320,34 @@
 
       // Get all setlists for multi-part videos
       const allSetlists = [];
+      const visited = new Set();
       if (data.previous || data.next) {
         let current = data;
-        while (current.previous) {
+        // Traverse previous
+        while (current.previous && !visited.has(current.previous)) {
           const prev = setlists[current.previous];
           if (!prev) break;
           prev.id = current.previous;
           allSetlists.push(prev);
+          visited.add(current.previous);
           current = prev;
         }
         allSetlists.reverse();
         allSetlists.push(data);
+        visited.clear();
         current = data;
-        while (current.next) {
+        // Traverse next
+        while (current.next && !visited.has(current.next)) {
           const next = setlists[current.next];
           if (!next) break;
           next.id = current.next;
           allSetlists.push(next);
+          visited.add(current.next);
           current = next;
         }
       } else {
-		allSetlists.push(data);
-	  }
+        allSetlists.push(data);
+      }
 
       if (data.setlist && data.setlist.length) {
         var i = 1;
