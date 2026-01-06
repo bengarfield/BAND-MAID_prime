@@ -172,10 +172,10 @@
     "previous": "122523"
   },
   "120823": {
-    "title": "Stationhead Live Stream Archive 1 (Aug. 1, 2025)",
+    "title": "Stationhead Live Stream Archive 2 (Aug. 1, 2025)",
     "venue": "[Stationhead]",
     "date": "2025-08-01",
-    "notes": "#1 of 4 [15:45]",
+    "notes": "#2 of 6 [15:45]",
     "setlist": [
       {
         "time": "00:00",
@@ -210,10 +210,10 @@
     "next": "120824"
   },
   "120824": {
-    "title": "Stationhead Live Stream Archive 2 (Aug. 15, 2025)",
+    "title": "Stationhead Live Stream Archive 3 (Aug. 15, 2025)",
     "venue": "[Stationhead]",
     "date": "2025-08-15",
-    "notes": "#2 of 4 [18:17]",
+    "notes": "#3 of 6 [18:17]",
     "setlist": [
       {
         "time": "00:00",
@@ -244,10 +244,10 @@
     "next": "120825"
   },
   "120825": {
-    "title": "Stationhead Live Stream Archive 3 (Aug. 29, 2025)",
+    "title": "Stationhead Live Stream Archive 4 (Aug. 29, 2025)",
     "venue": "[Stationhead]",
     "date": "2025-08-29",
-    "notes": "#3 of 4 [15:46]",
+    "notes": "#4 of 6 [15:46]",
     "setlist": [
       {
         "time": "00:00",
@@ -278,10 +278,10 @@
     "next": "120826"
   },
   "120826": {
-    "title": "Stationhead Live Stream Archive 4 (Sep. 12, 2025)",
+    "title": "Stationhead Live Stream Archive 5 (Sep. 12, 2025)",
     "venue": "[Stationhead]",
     "date": "2025-09-12",
-    "notes": "#4 of 4 [21:58]",
+    "notes": "#5 of 6 [21:58]",
     "setlist": [
       {
         "time": "00:00",
@@ -312,10 +312,10 @@
     "next": "122028"
   },
   "122028": {
-    "title": "Stationhead Live Stream Kobato,Akane,MISA (Dec. 5, 2025)",
+    "title": "Stationhead Live Stream Archive 6 (Dec. 5, 2025)",
     "venue": "[Stationhead]",
     "date": "2025-12-05",
-    "notes": "[25:07]",
+    "notes": "#6 of 6 [25:07]",
     "setlist": [
       {
         "time": "00:00",
@@ -467,8 +467,7 @@
         "time": "37:20",
         "song": "TGT announced"
       }
-    ],
-    "next": "111700"
+    ]
   },
   "58887": {
     "title": "Super Lazy Time from BAND-MAID ONLINE OKYU-JI",
@@ -500,10 +499,10 @@
     ]
   },
   "111700": {
-    "title": "Stationhead Live Stream Archive #1 2025-04",
+    "title": "Stationhead Live Stream Archive 1 (April 10, 2025)",
     "tour": "Ready to Rock Release",
     "date": "2025-04-10",
-    "notes": "26:16 run time",
+    "notes": "#1 of 6 [26:16]",
     "setlist": [
       {
         "time": "00:00",
@@ -542,8 +541,7 @@
         "song": "Rock Lady MoCap"
       }
     ],
-    "previous": "120823",
-    "next": "111992"
+    "next": "120823"
   },
   "92892": {
     "title": "MC from BAND-MAID TOKYO GARDEN THEATER OKYUJI part 1",
