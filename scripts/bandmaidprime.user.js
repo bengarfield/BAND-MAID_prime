@@ -293,7 +293,8 @@
   let currentSetlist = null;
 
   // Create the overlay
-  const renderSummary = (data, setlists) => {
+  const renderSummary = async (setlists, videoId) => {
+    const data = setlists[videoId];
     const existing = document.querySelector('#bandmaid-summary-box');
     if (existing) existing.remove();
 
@@ -345,7 +346,14 @@
       if (data.setlist && data.setlist.length) {
         var i = 1;
         for (const part of allSetlists) {
-          html += `<strong>${allSetlists.length == 1 ? "Contents" : "Part " + (allSetlists.indexOf(part) + 1)}:</strong><br><ol ${part == data ? 'class="currentSetlist"' : ''} style="margin-top:4px;" start=${i}>`;
+          var listTitle = "Contents";
+          if (primeDataCache == null) await loadPrimeData();
+          if (primeDataCache.find(d => d.URL && d.URL.includes(videoId))?.Category != "[OKYUJI]") {
+            listTitle = part.title;
+          } else if (allSetlists.length > 1) {
+            listTitle = "Part " + (allSetlists.indexOf(part) + 1);
+          }
+          html += `<strong>${listTitle}:</strong><br><ol ${part == data ? 'class="currentSetlist"' : ''} style="margin-top:4px;" start=${i}>`;
           for (const entry of part.setlist) {
             if (entry.time) {
               const seconds = getSecondsFromTimeString(entry.time);
@@ -379,11 +387,13 @@
 
     const div = document.createElement('div');
     div.style.width = 'fit-content';
+    div.style.float = 'left';
     div.innerHTML = html;
 
-    const titleElement = document.querySelector('h1, .movie-title');
-    if (titleElement) titleElement.insertAdjacentElement('afterend', div);
-	
+    // Attach to main body instead of header so it can be scrolled
+    const mainElement = document.querySelector('main');
+    if (mainElement) mainElement.insertAdjacentElement('afterbegin', div);
+
     currentSetlist = document.querySelector('.currentSetlist');
     let highlightedStyle = document.createElement('style');
     highlightedStyle.type = 'text/css';
@@ -437,7 +447,7 @@
 
     try {
       const setlists = await loadSetlists();
-      renderSummary(setlists[videoId], setlists);
+      renderSummary(setlists, videoId);
     } catch (err) {
       console.error('Failed to load BAND-MAID setlists:', err);
     }
